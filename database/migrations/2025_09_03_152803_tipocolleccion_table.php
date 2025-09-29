@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tipocolleccion', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');
             $table->string('nombre');
             $table->string('acronimo');
             $table->string('registro');
@@ -20,6 +20,13 @@ return new class extends Migration
             $table->string('pais');
             $table->string('departamento');
             $table->string('ciudad');
+              $table->boolean('estado')->default(true)->comment('');
+            $table->timestamp('fechacreacion')->nullable()->default(null);
+            $table->integer('usuariocreacion');
+            $table->timestamp('fechamodificacion')->nullable()->default(null);
+            $table->integer('usuariomodificacion');
+            $table->string('ipcreacion',255);
+            $table->string('ipmodificacion',255);
             $table->timestamps();
         });
     }

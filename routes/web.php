@@ -25,6 +25,3 @@ use App\Models\Pieza;
 Route::get('/', function () {
     return view('welcome');
 });
-Route::Resource('/tipocollecciones', TipoColleccionController::class);
-Route::Resource('/collecciones', ColleccionController::class);
-Route::Resource('/piezas', PiezaController::class);

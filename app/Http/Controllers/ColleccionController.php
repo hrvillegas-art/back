@@ -4,58 +4,172 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Colleccion;
+use App\Service\ColleccionService;
 use App\Models\Tipocolleccion;
-use App\Http\Requests\StorePostRequestColleccion;
-use App\Http\Requests\UpdatePostRequestColleccion;
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
+use Illuminate\Support\Facades\Validator;
 
 class ColleccionController extends Controller
 {
-    public function index()
-    {
-        $collecciones = Colleccion::paginate(10);
-        return response()->json($collecciones);
-    }   
+ 
+    /**
+     * @var ColleccionService
+     */
+    protected $colleccionService;
+    
+    public function __construct(ColleccionService $colleccionService) {
 
-    public function show($id)
-    {
-        $colleccion = Colleccion::find($id);
-        if ($colleccion) {
-            return response()->json($colleccion);
-        } else {
-            return response()->json(['message' => 'Colección no encontrada'], 404);
-        }
-    }   
-
-    public function store(Request $request)
-    {
-       Colleccion::create($request->only(['nombre', 'descripcion', 'tipocolleccion_id']  ));
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Tipo de colección creado con éxito.',
-        'data' => $request->only(['nombre', 'descripcion', 'tipocolleccion_id'])
-    ], 201);
+        $this->colleccionService = $colleccionService;
     }
 
-    public function update(Request $request, $id)
-    {
-        $colleccion = Colleccion::find($id);
-        if ($colleccion) {
-            $colleccion->update($request->only(['nombre', 'descripcion', 'tipocolleccion_id'] ));
-            return response()->json($colleccion);
-        } else {
-            return response()->json(['message' => 'Colección no encontrada'], 404);
-        }
+    /**
+     * Permite guardar y actualizar un recurso.
+     *
+     * @return \Illuminate\Http\Response
+     */
+   public function guardar(StorePostRequest $request)
+   {
+        $user_id = 1;
+        $output =  $this->colleccionService->guardar( (object)
+            [  
+                'id' => $request['id'] ,   
+                'nombre' => $request['nombre'] ,   
+                'descripcion' => $request['descripcion'] , 
+                'tipocolleccion_id' => $request['tipocolleccion_id'] ,
+                'estado' => $request['estado'] ,
+                'usuariocreacion' =>$user_id,
+                'usuariomodificacion' => $user_id,
+                'ipmodificacion' => $request->getClientIp(),
+                'ipcreacion' => $request->getClientIp()
+                  
+            ]
+        );
+
+        return \response()->json([
+            'msg' => $request['id'] > 0 ? ['Datos actualizados exitosamente'] :['Datos guardados exitosamente'],
+            'obj' =>  $output
+        ],202);
     }
-    public function destroy($id)
+
+    
+    /**
+     * Obtiene un recurso por su ID.
+     *
+     * @param ManageResourceRequest $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function obtenerRecurso(ManageResourceRequest $request, int $id): JsonResponse
     {
-       $colleccion = Colleccion::find($id);
-        if ($colleccion) {
-            $colleccion->delete();
-            return response()->json(['message' => 'Colección eliminada con éxito']);
-        } else {
-            return response()->json(['message' => 'Colección no encontrada'], 404);
-        }           
+        // La validación del ID se maneja por el FormRequest
+        $obj = $this->colleccionService->obtenerRecurso($id);
+
+        return response()->json($obj, 200);
+    }
+
+    /**
+     * Lista todos los recursos con filtros.
+     *
+     * 
+    /** */
+    public function listarTodo(Request $request)
+    {
+       // Valores por defecto
+    $page = $request->input('page', 1);
+    $numero_items = $request->input('numero_items', 10);
+    $find = $request->input('find', '');
+    $estado = $request->input('estado', '');
+
+    // Validación opcional solo para tipos
+    $valid = Validator::make([
+        'page' => $page,
+        'numero_items' => $numero_items
+    ], [
+        'page' => 'integer|min:1',
+        'numero_items' => 'integer|min:1'
+    ], [
+        'page.integer' => 'El campo página debe ser tipo entero',
+        'page.min' => 'El campo página debe ser mínimo 1',
+        'numero_items.integer' => 'El campo número de registros debe ser tipo entero',
+        'numero_items.min' => 'El campo número de registros debe ser mínimo 1'
+    ]);
+
+    if ($valid->fails()) {
+        return response()->json([
+            'state' => 422,
+            'msg' => $valid->errors()->all(),
+            'title' => 'Campos con valores incorrectos'
+        ], 422);
+    }
+
+    $array_data = $this->colleccionService->listarTodo($find, $estado, $page, $numero_items);
+
+    return response()->json($array_data, 200);
+    }
+
+    
+    public function eliminar(Request $request)
+    {
+        $array_mensajes = [
+            "array_ids.required" => "Los identificadores son obligatorios",
+            "array_ids.array" => "Los identificadores debe ser enviado en array",
+            "array_ids.*.integer" => "El identificador :input debe ser un entero"
+        ];
+
+        $valid = Validator::make(
+            $request->all(),
+            [
+                "array_ids" => "required|array|min:1",
+                "array_ids.*" => "integer"
+            ],
+            $array_mensajes);
+
+        if ($valid->fails())
+        {
+            return \response()->json([
+                "state" => 422,
+                "msg" => $valid->errors()->all()
+            ],422);
+        }
+
+        $out_put = $this->colleccionService->eliminar($request['array_ids']);
+
+        return \response()->json(
+            $out_put
+        ,202);
+    }
+  public function cambiarEstado(Request $request, $id)
+    {
+        $array_mensajes = [
+            "id.required" => "El campo id es obligatorio",
+            "estado.required" => "El campo estado es obligatorio",
+            "id.integer" => "El campo id debe ser entero",
+            "id.min" => "El campo id debe ser minimo 1"
+        ];
+
+        $valid = Validator::make(
+            array("id" => $id),
+            [
+                "id" => "required|integer|min:1"
+            ],
+            $array_mensajes);
+
+        if ($valid->fails())
+        {
+            return \response()->json([
+                "state" => 422,
+                "msg" => $valid->errors()->all(),
+                "title" => "Campos con valores incorrectos"
+            ],422);
+        }
+
+        $obj = $this->colleccionService->cambiarEstado($id, $request["estado"]);
+
+        return \response()->json(
+            $obj
+        ,202);
+    }
 
 }
-}
+?>

@@ -17,6 +17,8 @@ use App\Http\Requests\StorePostRequestPieza;
 use App\Http\Requests\UpdatePostRequestPieza;
 
 
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -32,22 +34,41 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/tipocollecciones', [TipoColleccionController::class, 'store']);
-Route::get('/tipocollecciones', [TipoColleccionController::class, 'index']);
-Route::get('/tipocollecciones/{id}', [TipoColleccionController::class, 'show']);
-Route::put('/tipocollecciones/{id}', [TipoColleccionController::class, 'update']);
-Route::patch('/tipocollecciones/{id}', [TipoColleccionController::class, 'update']);
-Route::delete('/tipocollecciones/{id}', [TipoColleccionController::class, 'destroy']);
-Route::apiresource('/tipocollecciones', TipoColleccionController::class);
+// Route::post('/tipocollecciones', [TipoColleccionController::class, 'store']);
+// Route::get('/tipocollecciones', [TipoColleccionController::class, 'index']);
 
 
-Route::post('/collecciones', [ColleccionController::class, 'store']);
-Route::get('/collecciones', [ColleccionController::class, 'index']);
-Route::get('/collecciones/{id}', [ColleccionController::class, 'show']);
+Route::get('/tipocollecciones', [TipoColleccionController::class, 'listarTodo']);   // listar
+Route::post('/tipocollecciones', [TipoColleccionController::class, 'guardar']); // crear
+Route::get('/tipocollecciones/{id}', [TipoColleccionController::class, 'obtenerRecurso']); // obtener uno
+Route::put('/tipocollecciones/{id}', [TipoColleccionController::class, 'guardar']); // actualizar
+Route::delete('/tipocollecciones/{id}', [TipoColleccionController::class, 'eliminar']); // eliminar uno
+
+
+//Route::put('/tipocollecciones/{id}', [TipoColleccionController::class, 'cambiarEstado']);
+//Route::patch('/tipocollecciones/{id}', [TipoColleccionController::class, 'cambiarEstado']);
+
+;
+// Route::get('/tipocollecciones/{id}', [TipoColleccionController::class, 'show']);
+// Route::put('/tipocollecciones/{id}', [TipoColleccionController::class, 'update']);
+// Route::patch('/tipocollecciones/{id}', [TipoColleccionController::class, 'update']);
+// Route::delete('/tipocollecciones/{id}', [TipoColleccionController::class, 'destroy']);
+// Route::apiresource('/tipocollecciones', TipoColleccionController::class);
+
+Route::get('/collecciones', [ColleccionController::class, 'listarTodo']);
+Route::post('/collecciones', [ColleccionController::class, 'guardar']);
+Route::delete('/collecciones', [ColleccionController::class, 'eliminar']);
+//Route::put('/collecciones/{id}', [ColleccionController::class, 'cambiarEstado']);
+//Route::patch('/collecciones/{id}', [ColleccionController::class, 'cambiarEstado']);
+
+
+// Route::get('/collecciones', [ColleccionController::class, 'index']);
+
+/* Route::get('/collecciones/{id}', [ColleccionController::class, 'show']);
 Route::put('/collecciones/{id}', [ColleccionController::class, 'update']);
 Route::patch('/collecciones/{id}', [ColleccionController::class, 'update']);
 Route::delete('/collecciones/{id}', [ColleccionController::class, 'destroy']);
-Route::apiresource('/collecciones', ColleccionController::class);
+Route::apiresource('/collecciones', ColleccionController::class); */
 
 Route::post('/piezas', [PiezaController::class, 'store']);
 Route::get('/piezas', [PiezaController::class, 'index']);

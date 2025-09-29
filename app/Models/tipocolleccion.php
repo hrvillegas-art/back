@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class tipocolleccion extends Model
 {
-    use HasFactory;
+
     protected $table = 'tipocolleccion';
+     protected $connection = 'mysql';
+    const CREATED_AT = 'fechacreacion';
+    const UPDATED_AT = 'fechamodificacion';
     protected $fillable = [
         'nombre',
         'acronimo',
@@ -17,9 +19,13 @@ class tipocolleccion extends Model
         'pais',
         'departamento',
         'ciudad',
+         'estado',
+        'fechacreacion',
+        'usuariocreacion',
+        'fechamodificacion',
+        'usuariomodificacion',
+        'ipcreacion',
+        'ipmodificacion'
     ];
-    public function colecciones()
-    {
-        return $this->hasMany(Colleccion::class, 'tipocolleccion_id');
-    }
+    
 }

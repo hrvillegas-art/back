@@ -1,15 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\Request;
+namespace App\Http\Requests;
+
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-
 
 class UpdatePostRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
+
+    public function isajax()
+    {
+        if (!$this->ajax()) {
+            throw new ExceptionServer(
+                "UpdatePostRequestColleccion",
+                ["La petición debe ser enviada mediante AJAX"],
+                400,
+                "Petición inválida",
+                ""
+            );
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -22,36 +36,43 @@ class UpdatePostRequest extends FormRequest
      */
     public function rules(): array
     {
-if ($this->isMethod('patch')) {
+        // PATCH = update parcial
+        if ($this->isMethod('patch')) {
             return [
                 'nombre' => 'sometimes|required|string|max:255',
-                'acronimo' => 'sometimes|nullable|string',
-                'registro' => 'sometimes|nullable|string|max:255',
-                'entidad' => 'sometimes|nullable|string|max:255',
-                'pais' => 'sometimes|nullable|string|max:255',
-                'departamento' => 'sometimes|nullable|string|max:255',
-                'ciudad' => 'sometimes|nullable|string|max:255',
+                'descripcion' => 'sometimes|required|string',
+                'tipocolleccion_id' => 'sometimes|required|exists:tipocolleccions,id',
+                        'estado' => 'required|boolean',
+
             ];
-        }   
-        
+        }
+
+        // PUT = update completo
         return [
             'nombre' => 'required|string|max:255',
-            'acronimo' => 'required|string|max:255',
-            'registro' => 'required|string|max:255',
-            'entidad' => 'required|string|max:255', 
-            'pais' => 'required|string|max:255',
-            'departamento' => 'required|string|max:255',
-            'ciudad' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'tipocolleccion_id' => 'required|exists:tipocolleccions,id',
+                    'estado' => 'required|boolean',
+
         ];
     }
 
-         public function messages()
+    /**
+     * Mensajes personalizados de validación
+     */
+    public function messages()
     {
         return [
-            'name.required' => 'El campo nombre es obligatorio.',
-            'name.string' => 'El campo nombre debe ser una cadena de texto.',
-            'name.max' => 'El campo nombre no debe exceder los 255 caracteres.',
-            'acronimo.string' => 'El campo descripción debe ser una cadena de texto.',
+            'nombre.required' => 'El campo nombre es obligatorio.',
+            'nombre.string' => 'El campo nombre debe ser una cadena de texto.',
+            'nombre.max' => 'El campo nombre no debe exceder los 255 caracteres.',
+
+            'descripcion.required' => 'El campo descripción es obligatorio.',
+            'descripcion.string' => 'El campo descripción debe ser una cadena de texto.',
+
+            'tipocolleccion_id.required' => 'Debe seleccionar un tipo de colección.',
+            'tipocolleccion_id.exists' => 'El tipo de colección seleccionado no es válido.',
         ];
-    }   
     }
+}
+?>
