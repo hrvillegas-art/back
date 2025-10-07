@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ColleccionView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use App\Service\ViewService;
 use App\Service\TipoColleccionService;
-use Illuminate\Support\Facades\Validator;
 
 class ViewController extends Controller
 {
@@ -25,19 +24,30 @@ class ViewController extends Controller
      */
     public function guardar(Request $request, $colleccionId)
     {
+        $colleccionId = (int)$colleccionId;
         $userId = Auth::check() ? Auth::id() : null;
         $ipAddress = $request->ip();
 
-        $output = $this->viewService->guardar((object)[
-            'colleccion_id' => $colleccionId,
-            'user_id' => $userId,
-            'ip_address' => $ipAddress
-        ]);
+        try {
+            $output = $this->viewService->guardar((object)[
+                'colleccion_id' => $colleccionId,
+                'user_id' => $userId,
+                'ip_address' => $ipAddress
+            ]);
 
-        return response()->json([
-            'msg' => ['Vista registrada exitosamente'],
-            'obj' => $output
-        ], 202);
+            return response()->json([
+                'state' => 202,
+                'msg' => ['Vista registrada exitosamente'],
+                'obj' => $output
+            ], 202);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                'state' => 500,
+                'msg' => ['Error al registrar la vista'],
+                'error' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -45,51 +55,57 @@ class ViewController extends Controller
      */
     public function obtenerRecurso(Request $request, $colleccionId)
     {
-        $array_mensajes = [
-            'colleccionId.required' => 'El campo colleccionId es obligatorio',
-            'colleccionId.integer' => 'El campo colleccionId debe ser entero',
-            'colleccionId.min' => 'El campo colleccionId debe ser mínimo 1'
-        ];
-
-        $valid = Validator::make(
-            ['colleccionId' => $colleccionId],
-            ['colleccionId' => 'required|integer|min:1'],
-            $array_mensajes
+        $validator = Validator::make(
+            ['colleccion_id' => $colleccionId],
+            ['colleccion_id' => 'required|integer|min:1'],
+            [
+                'colleccion_id.required' => 'El campo colleccionId es obligatorio',
+                'colleccion_id.integer' => 'El campo colleccionId debe ser entero',
+                'colleccion_id.min' => 'El campo colleccionId debe ser mínimo 1',
+            ]
         );
 
-        if ($valid->fails()) {
+        if ($validator->fails()) {
             return response()->json([
-                'msg' => $valid->errors()->all(),
-                'obj' => null
+                'state' => 422,
+                'msg' => $validator->errors()->all()
             ], 422);
         }
 
-        $output = ColleccionView::where('colleccion_id', $colleccionId)
-            ->with(['coleccion'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        try {
+            $output = $this->viewService->obtenerRecurso($colleccionId);
 
-        if ($output->isEmpty()) {
+            if ($output->isEmpty()) {
+                return response()->json([
+                    'state' => 404,
+                    'msg' => ['No se encontraron registros'],
+                    'obj' => null
+                ], 404);
+            }
+
             return response()->json([
-                'msg' => ['No se encontraron registros'],
-                'obj' => null
-            ], 404);
-        }
+                'state' => 202,
+                'msg' => ['Registros obtenidos exitosamente'],
+                'obj' => $output
+            ], 202);
 
-        return response()->json([
-            'msg' => ['Registros obtenidos exitosamente'],
-            'obj' => $output
-        ], 202);
+        } catch (\Exception $ex) {
+            return response()->json([
+                'state' => 500,
+                'msg' => ['Error al obtener los registros'],
+                'error' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * ✅ Listar todas las vistas (paginadas)
      */
-     public function listarTodo(Request $request)
+    public function listarTodo(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'page' => 'required|integer|min:1',
-            'numero_items' => 'required|integer|min:1',
+            'page' => 'integer|min:1',
+            'numero_items' => 'integer|min:1',
             'find' => 'nullable|string',
             'estado' => 'nullable|string'
         ]);
@@ -98,24 +114,31 @@ class ViewController extends Controller
             return response()->json([
                 'state' => 422,
                 'msg' => $validator->errors()->all(),
-                'title' => 'Campos inválidos'
             ], 422);
         }
 
-        $page = $request->input('page');
-        $numero_items = $request->input('numero_items');
+        $page = $request->input('page', 1);
+        $numero_items = $request->input('numero_items', 10);
         $find = $request->input('find', '');
         $estado = $request->input('estado', '');
 
-        $result = $this->viewService->listarTodo($find, $estado, $page, $numero_items);
+        try {
+            $result = $this->viewService->listarTodo($find, $estado, $page, $numero_items);
 
-        return response()->json([
-            'state' => 202,
-            'msg' => ['Registros obtenidos exitosamente'],
-            'obj' => $result
-        ], 202);
+            return response()->json([
+                'state' => 202,
+                'msg' => ['Registros obtenidos exitosamente'],
+                'obj' => $result
+            ], 202);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                'state' => 500,
+                'msg' => ['Error al obtener las estadísticas'],
+                'error' => $ex->getMessage()
+            ], 500);
+        }
     }
-
 
     /**
      * ✅ Eliminar una o varias vistas
@@ -131,39 +154,62 @@ class ViewController extends Controller
             ], 422);
         }
 
-        $this->viewService->eliminar($ids);
+        try {
+            $this->viewService->eliminar($ids);
 
-        return response()->json([
-            "state" => 200,
-            "msg" => ["Eliminado correctamente"]
-        ]);
+            return response()->json([
+                "state" => 200,
+                "msg" => ["Eliminado correctamente"]
+            ], 200);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                "state" => 500,
+                "msg" => ["Error al eliminar el recurso"],
+                "error" => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * ✅ Cambiar el estado de una vista (por ejemplo activar/desactivar)
+     * ✅ Cambiar el estado de una vista
      */
     public function cambiarEstado(Request $request, $id)
     {
-        $valid = Validator::make(
-            ["id" => $id],
-            ["id" => "required|integer|min:1"],
+        $validator = Validator::make(
+            ["id" => $id, "estado" => $request->input("estado")],
+            ["id" => "required|integer|min:1", "estado" => "required|in:0,1"],
             [
                 "id.required" => "El campo id es obligatorio",
                 "id.integer" => "El campo id debe ser entero",
-                "id.min" => "El campo id debe ser mínimo 1"
+                "id.min" => "El campo id debe ser mínimo 1",
+                "estado.required" => "El campo estado es obligatorio",
+                "estado.in" => "El estado debe ser 0 o 1"
             ]
         );
 
-        if ($valid->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 "state" => 422,
-                "msg" => $valid->errors()->all(),
-                "title" => "Campos con valores incorrectos"
+                "msg" => $validator->errors()->all()
             ], 422);
         }
 
-        $obj = $this->viewService->cambiarEstado($id, $request->input("estado"));
+        try {
+            $obj = $this->viewService->cambiarEstado($id, $request->input("estado"));
 
-        return response()->json($obj, 202);
+            return response()->json([
+                "state" => 202,
+                "msg" => ["Estado actualizado correctamente"],
+                "obj" => $obj
+            ], 202);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                "state" => 500,
+                "msg" => ["Error al cambiar el estado"],
+                "error" => $ex->getMessage()
+            ], 500);
+        }
     }
 }

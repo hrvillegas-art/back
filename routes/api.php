@@ -92,8 +92,16 @@ Route::get('/tipocollecciones/search/{name}', function ($name) {
 Route::get('/factor', [FactorController::class, 'listarTodo']);
 
 // Route::get('vistas', [ViewController::class, 'listarTodo']); // <-- GET /api/vistas
-Route::get('vistas/{colleccionId}', [ViewController::class, 'obtenerRecurso']); // vistas por colección
-Route::post('vistas/{colleccionId}', [ViewController::class, 'guardar']); // registrar vista
+// Vistas por colección
+Route::get('vistas/{colleccionId}', [ViewController::class, 'obtenerRecurso']); // obtener todas las vistas de una colección
+Route::post('vistas/{colleccionId}', [ViewController::class, 'guardar']); // registrar nueva vista
 
-Route::get('vistas/listar', [ViewController::class, 'listarTodo']);
-Route::post('vistas/listar', [ViewController::class, 'listar']);
+// Listado paginado de todas las vistas
+Route::get('vistas', [ViewController::class, 'listarTodo']);  // listar todas las vistas (GET con query params)
+Route::post('vistas/listar', [ViewController::class, 'listarTodo']); // listar todas las vistas (POST con body)
+
+// Eliminar vistas
+Route::delete('vistas/{id?}', [ViewController::class, 'eliminar']); // eliminar una o varias vistas
+
+// Cambiar estado de una vista
+Route::patch('vistas/{id}/estado', [ViewController::class, 'cambiarEstado']); // cambiar estado (activar/desactivar)
