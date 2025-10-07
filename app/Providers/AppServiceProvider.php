@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Factor\FactorInterface;
+use App\Repositories\TipoColleccion\TipoColleccionInterface;
+use App\Repositories\Colleccion\ColleccionInterface;
+use App\Repositories\Pieza\PiezaInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,7 +32,16 @@ class AppServiceProvider extends ServiceProvider
             'App\Repositories\Colleccion\ColleccionRepository',
             'App\Service\ColleccionService'            
         );
-
+         $this->app->bind(
+            'App\Repositories\Pieza\PiezaInterface',
+            'App\Repositories\Pieza\PiezaRepository',
+            'App\Service\PiezaService'            
+        );
+        $this->app->bind(
+            'App\Repositories\View\ViewInterface',
+            'App\Repositories\View\ViewRepository',
+            'App\Service\ViewService'            
+        );
 
     }
 

@@ -2,13 +2,22 @@
 namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-
+use App\Exceptions\ExceptionServer;
 
 class StorePostRequestPieza extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
+
+    public function isajax()
+    {
+        if(!$this->ajax())
+        {
+            throw new ExceptionServer("StorePostRequestColleccion",["La peticion debe ser enviada mediante ajax"], 400, "Petición invalida", "");
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -42,6 +51,7 @@ class StorePostRequestPieza extends FormRequest
             'latitud' => 'required|string|max:50',
             'datumGeodesico' => 'required|string|max:100',
             'imagen' => 'sometimes|nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'estado' => 'required|in:0,1'
         ];
     }
 

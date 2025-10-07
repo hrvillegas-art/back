@@ -15,7 +15,9 @@ use App\Http\Controllers\FactorController;
 use App\Models\Pieza;
 use App\Http\Requests\StorePostRequestPieza;
 use App\Http\Requests\UpdatePostRequestPieza;
-
+use App\Models\ColleccionView;
+use App\Http\Controllers\ViewController;
+use App\Http\Requests\ViewRequest;
 
 
 
@@ -55,6 +57,8 @@ Route::delete('/tipocollecciones/{id}', [TipoColleccionController::class, 'elimi
 // Route::delete('/tipocollecciones/{id}', [TipoColleccionController::class, 'destroy']);
 // Route::apiresource('/tipocollecciones', TipoColleccionController::class);
 
+Route::put('/collecciones/{id}', [ColleccionController::class, 'guardar']); // actualizar
+Route::delete('/collecciones/{id}', [ColleccionController::class, 'eliminar']); // eliminar uno
 Route::get('/collecciones', [ColleccionController::class, 'listarTodo']);
 Route::post('/collecciones', [ColleccionController::class, 'guardar']);
 Route::delete('/collecciones', [ColleccionController::class, 'eliminar']);
@@ -70,14 +74,14 @@ Route::patch('/collecciones/{id}', [ColleccionController::class, 'update']);
 Route::delete('/collecciones/{id}', [ColleccionController::class, 'destroy']);
 Route::apiresource('/collecciones', ColleccionController::class); */
 
-Route::post('/piezas', [PiezaController::class, 'store']);
-Route::get('/piezas', [PiezaController::class, 'index']);
-Route::get('/piezas/{id}', [PiezaController::class, 'show']);
-Route::put('/piezas/{id}', [PiezaController::class, 'update']);
-Route::patch('/piezas/{id}', [PiezaController::class, 'update']);
-Route::delete('/piezas/{id}', [PiezaController::class, 'destroy']);
-Route::apiresource('/piezas', PiezaController::class);
-// En routes/api.php
+
+Route::post('/piezas', [PiezaController::class, 'guardar']);
+Route::get('/piezas', [PiezaController::class, 'listarTodo']);
+Route::get('/piezas/{id}', [PiezaController::class, 'obtenerRecurso']);
+Route::delete('/piezas/{id}', [PiezaController::class, 'eliminar']);
+Route::delete('/piezas', [PiezaController::class, 'eliminar']);
+Route::put('/piezas/{id}', [PiezaController::class, 'guardar']);
+
 Route::patch('/piezas/{id}/toggle-publish', [PiezaController::class, 'togglePublishStatus']);
 
 Route::get('/tipocollecciones/search/{name}', function ($name) {
@@ -86,3 +90,10 @@ Route::get('/tipocollecciones/search/{name}', function ($name) {
 }); 
 
 Route::get('/factor', [FactorController::class, 'listarTodo']);
+
+// Route::get('vistas', [ViewController::class, 'listarTodo']); // <-- GET /api/vistas
+Route::get('vistas/{colleccionId}', [ViewController::class, 'obtenerRecurso']); // vistas por colección
+Route::post('vistas/{colleccionId}', [ViewController::class, 'guardar']); // registrar vista
+
+Route::get('vistas/listar', [ViewController::class, 'listarTodo']);
+Route::post('vistas/listar', [ViewController::class, 'listar']);

@@ -22,9 +22,8 @@ class TipoColleccionController extends Controller
 
 public function guardar(StorePostRequestColleccion $request, $id = null)
 {
-    $user_id = 1;
     
-   
+   $user_id = 1; // Aquí deberías obtener el ID del usuario autenticado
     $id_from_route = $request->isMethod('put') || $request->isMethod('patch') ? $id : null;
     
     // El ID que se envía al servicio es el de la URL (si es update) o el del cuerpo (si es post/create).
@@ -36,12 +35,13 @@ public function guardar(StorePostRequestColleccion $request, $id = null)
         $request->all(), // Datos validados del FormRequest
         [
             'id' => $resourceId,
-            'usuariocreacion' => $user_id,
-            'usuariomodificacion' => $user_id,
+            'usuariocreacion' => $request['usuariocreacion'] ?? $user_id,
+            'usuariomodificacion' => $request['usuariomodificacion'] ?? $user_id,
             'ipmodificacion' => $request->getClientIp(),
             'ipcreacion' => $request->getClientIp()
         ]
     );
+
 
     // 3. Ejecutar la lógica de guardar/actualizar en el servicio
     $output = $this->tipocolleccionService->guardar($data);
@@ -148,28 +148,32 @@ public function listarTodo(Request $request)
 
 
     // Eliminar recursos
-    public function eliminar(Request $request)
-    {
-        $valid = Validator::make($request->all(), [
-            "array_ids" => "required|array|min:1",
-            "array_ids.*" => "integer"
-        ], [
-            "array_ids.required" => "Los identificadores son obligatorios",
-            "array_ids.array" => "Los identificadores deben enviarse en array",
-            "array_ids.*.integer" => "El identificador :input debe ser un entero"
-        ]);
-
-        if ($valid->fails()) {
-            return response()->json([
-                "state" => 422,
-                "msg" => $valid->errors()->all()
-            ], 422);
-        }
-
-        $out_put = $this->tipocolleccionService->eliminar($request['array_ids']);
-
-        return response()->json($out_put, 200);
+    public function eliminar(Request $request, $id = null)
+{
+    // Caso 1: eliminar por ID en la URL
+    if ($id) {
+        $ids = [$id];
+    } 
+    // Caso 2: eliminar múltiples desde el body
+    else {
+        $ids = $request->input("ids", []);
     }
+
+    if (empty($ids)) {
+        return response()->json([
+            "state" => 422,
+            "msg"   => ["Los identificadores son obligatorios"]
+        ], 422);
+    }
+
+    $this->tipocolleccionService->eliminar($ids);
+
+    return response()->json([
+        "state" => 200,
+        "msg"   => ["Eliminado correctamente"]
+    ]);
+}
+
 
     // Cambiar estado
     public function cambiarEstado(UpdatePostRequestColleccion $request, $id)
@@ -191,6 +195,25 @@ public function listarTodo(Request $request)
         $obj = $this->tipocolleccionService->cambiarEstado($id, $request["estado"]);
 
         return response()->json($obj, 200);
+    }
+    public function verColeccion($id, Request $request)
+    {
+        // 1️⃣ Verificar si la colección existe
+        $coleccion = TipoColleccion::findOrFail($id);
+
+        // 2️⃣ Registrar la vista
+        ColeccionView::create([
+            'tipo_colleccion_id' => $id,
+            'user_id'      => Auth::id(), // Si no hay sesión, quedará null
+            'ip_address'   => $request->ip(),
+        ]);
+
+        // 3️⃣ Retornar la colección como JSON
+        return response()->json([
+            'state' => 200,
+            'msg'   => ['Vista registrada y datos obtenidos correctamente'],
+            'data'  => $coleccion,
+        ]);
     }
 }
 ?>

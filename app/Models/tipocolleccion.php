@@ -25,7 +25,12 @@ class tipocolleccion extends Model
         'fechamodificacion',
         'usuariomodificacion',
         'ipcreacion',
-        'ipmodificacion'
+        'ipmodificacion',
     ];
+
+    public function Pieza()
+    {
+        return $this->hasMany(Pieza::class, 'tipocolleccion_id');
+    }
     
 }

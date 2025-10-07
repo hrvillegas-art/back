@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        schema::create('pieza', function (Blueprint $table) {
-            $table->id();
+        Schema::create('pieza', function (Blueprint $table) {
+            $table->bigIncrements('id');
             $table->string('familia');
             $table->string('genero');
             $table->string('especie');
@@ -33,6 +33,15 @@ return new class extends Migration
             $table->string('latitud');
             $table->string('datumGeodesico');
             $table->string('imagen')->nullable();
+            $table->string('usuarioCreacion', 100)->nullable();
+               $table->boolean('estado')->default(true)->comment('');
+             $table->timestamp('fechamodificacion')->nullable()->default(null);
+             $table->timestamp('fechacreacion')->nullable()->default(null);
+            $table->integer('usuariomodificacion');
+            $table->string('ipcreacion',255);
+            $table->string('ipmodificacion',255);
+            $table->unsignedBigInteger('tipocolleccion_id')->nullable();
+            $table->foreign('tipocolleccion_id')->references('id')->on('tipocolleccion')->onDelete('set null');
 
             $table->timestamps();
         });

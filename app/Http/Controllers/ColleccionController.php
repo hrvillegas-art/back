@@ -109,35 +109,28 @@ class ColleccionController extends Controller
     }
 
     
-    public function eliminar(Request $request)
+    public function eliminar(Request $request, $id = null)
     {
-        $array_mensajes = [
-            "array_ids.required" => "Los identificadores son obligatorios",
-            "array_ids.array" => "Los identificadores debe ser enviado en array",
-            "array_ids.*.integer" => "El identificador :input debe ser un entero"
-        ];
-
-        $valid = Validator::make(
-            $request->all(),
-            [
-                "array_ids" => "required|array|min:1",
-                "array_ids.*" => "integer"
-            ],
-            $array_mensajes);
-
-        if ($valid->fails())
-        {
-            return \response()->json([
-                "state" => 422,
-                "msg" => $valid->errors()->all()
-            ],422);
+        // Caso 1: eliminar por ID en la URL
+        if ($id) {
+            $ids = [$id];
+        } else {
+            $ids = $request->input("ids", []);
         }
 
-        $out_put = $this->colleccionService->eliminar($request['array_ids']);
+        if (empty($ids)) {
+            return response()->json([
+                "state" => 422,
+                "msg"   => ["Los identificadores son obligatorios"]
+            ], 422);
+        }
 
-        return \response()->json(
-            $out_put
-        ,202);
+        $this->colleccionService->eliminar($ids);
+
+        return response()->json([
+            "state" => 200,
+            "msg"   => ["Eliminado correctamente"]
+        ]);
     }
   public function cambiarEstado(Request $request, $id)
     {

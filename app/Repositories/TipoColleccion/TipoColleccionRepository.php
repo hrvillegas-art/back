@@ -15,44 +15,38 @@ class TipoColleccionRepository implements TipoColleccionInterface
         $this->model = $tipocolleccion;
     }
 
-    public function guardar($obj_data)
+   public function guardar($obj_data)
 {
     try {
-        // 1. Intentar obtener el ID (asegurando que sea un entero > 0)
         $id = (int) ($obj_data->id ?? 0); 
-        
         $obj = null;
-        
-        // 2. Si se proporciona un ID válido, intentar encontrar el registro
+
+        // Buscar si es actualización
         if ($id > 0) {
             $obj = $this->model->find($id);
         }
 
-        // 3. Determinar si es una actualización o una creación
         if ($obj) {
-            // Lógica de ACTUALIZACIÓN (ya que $obj fue encontrado)
-            $obj->usuariomodificacion = $obj_data->usuariomodificacion ?? $obj->usuariomodificacion ?? 1;
-            $obj->ipmodificacion      = $obj_data->ipmodificacion ?? $obj->ipmodificacion ?? request()->ip();
+            // === ACTUALIZACIÓN ===
+            $obj->usuariomodificacion = $obj_data->usuariomodificacion ?? $obj->usuariomodificacion;
+            $obj->ipmodificacion      = $obj_data->ipmodificacion ?? request()->ip();
 
-            // Asegurar que no se sobrescriban los campos de creación en una actualización
-            $obj_data->usuariocreacion = $obj->usuariocreacion;
-            $obj_data->ipcreacion      = $obj->ipcreacion;
+            // ✅ permitir cambiar también el usuario de creación
+            $obj->usuariocreacion = $obj_data->usuariocreacion ?? $obj->usuariocreacion;
+            $obj->ipcreacion      = $obj_data->ipcreacion ?? $obj->ipcreacion;
+
         } else {
-            // Lógica de CREACIÓN (ya que $obj es null o $id era 0)
+            // === CREACIÓN ===
             $obj = new $this->model();
-            
-            // Campos de auditoría de CREACIÓN (no sobrescriben los existentes)
-            $obj->usuariocreacion     = $obj_data->usuariocreacion ?? 1;
+
+            $obj->usuariocreacion     = $obj_data->usuariocreacion ?? 'SIN DEFINIR';
             $obj->ipcreacion          = $obj_data->ipcreacion ?? request()->ip();
 
-            // Campos de auditoría de MODIFICACIÓN también se establecen en la creación
-            $obj->usuariomodificacion = $obj_data->usuariomodificacion ?? 1;
+            $obj->usuariomodificacion = $obj_data->usuariomodificacion ?? $obj->usuariocreacion;
             $obj->ipmodificacion      = $obj_data->ipmodificacion ?? request()->ip();
         }
 
-        // 4. Asignar campos comunes y guardar
-        // Aquí puedes usar array_merge o fill para simplificar, 
-        // pero mantendremos la asignación directa para claridad:
+        // === CAMPOS COMUNES ===
         $obj->nombre       = $obj_data->nombre ?? $obj->nombre;
         $obj->acronimo     = $obj_data->acronimo ?? $obj->acronimo;
         $obj->registro     = $obj_data->registro ?? $obj->registro;
@@ -60,15 +54,24 @@ class TipoColleccionRepository implements TipoColleccionInterface
         $obj->pais         = $obj_data->pais ?? $obj->pais;
         $obj->departamento = $obj_data->departamento ?? $obj->departamento;
         $obj->ciudad       = $obj_data->ciudad ?? $obj->ciudad;
-        $obj->estado       = $obj_data->estado ?? $obj->estado; // Asegúrate de que este campo SIEMPRE venga en el payload
+        $obj->estado       = $obj_data->estado ?? $obj->estado;
 
         $obj->save();
         return $obj;
 
     } catch (\Exception $ex) {
-        // ... (Manejo de excepciones)
+        throw new ExceptionServer(
+            basename(__FILE__, ".php"),
+            ["Error al guardar el Tipo de Colección"],
+            500,
+            "Fallo en repositorio",
+            "LOG",
+            $ex->getMessage()
+        );
     }
 }
+
+
 
 public function selectBase()
     {
@@ -88,6 +91,7 @@ public function selectBase()
                     "tipocolleccion.usuariomodificacion",
                     "tipocolleccion.ipcreacion",
                     "tipocolleccion.ipmodificacion"
+
                 );
     }
 

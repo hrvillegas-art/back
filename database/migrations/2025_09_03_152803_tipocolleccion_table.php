@@ -22,9 +22,9 @@ return new class extends Migration
             $table->string('ciudad');
               $table->boolean('estado')->default(true)->comment('');
             $table->timestamp('fechacreacion')->nullable()->default(null);
-            $table->integer('usuariocreacion');
+            $table->string('usuariocreacion');
             $table->timestamp('fechamodificacion')->nullable()->default(null);
-            $table->integer('usuariomodificacion');
+            $table->string('usuariomodificacion');
             $table->string('ipcreacion',255);
             $table->string('ipmodificacion',255);
             $table->timestamps();

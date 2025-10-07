@@ -34,6 +34,19 @@ class pieza extends Model
         'latitud',
         'datumGeodesico',
         'imagen',
-        'is_published'
+        'is_published',
+        'estado',
+        'fechacreacion',
+        'usuariocreacion',
+        'fechamodificacion',
+        'usuariomodificacion',
+        'ipcreacion',
+        'ipmodificacion',
+        'tipocolleccion_id'
     ];
+
+    public function tipocolleccion()
+    {
+        return $this->belongsTo(TipoColleccion::class, 'tipocolleccion_id');
+    }
 }
