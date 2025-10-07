@@ -37,10 +37,12 @@ class ViewService
     /**
      * Listar todas las vistas
      */
-  public function listarTodo($find = '', $estado = '', $page = 1, $numero_items = 10)
+    // 💡 CORRECCIÓN: Agregar $tipo_colleccion_id a la firma
+    public function listarTodo($find = '', $estado = '', $page = 1, $numero_items = 10, $tipo_colleccion_id = null)
     {
         try {
-            return $this->repository->listarTodo($find, $estado, $page, $numero_items);
+            // 💡 Asegurar que se pase $tipo_colleccion_id al repositorio
+            return $this->repository->listarTodo($find, $estado, $page, $numero_items, $tipo_colleccion_id);
         } catch (ExceptionServer $ex) {
             throw $ex;
         }

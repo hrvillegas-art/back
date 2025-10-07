@@ -23,30 +23,19 @@ class ViewRepository implements ViewInterface
     public function guardar($obj_data)
     {
         try {
-            // Convertir stdClass a array si es necesario
             if ($obj_data instanceof \stdClass) {
                 $obj_data = (array) $obj_data;
             }
 
-            // Validación de campos obligatorios
-            if (!isset($obj_data['colleccion_id'])) {
-                throw new \Exception('El campo colleccion_id es obligatorio');
-            }
-
-            // Verificar que la colección exista
-            if (!Tipocolleccion::where('id', $obj_data['colleccion_id'])->exists()) {
+            // Validar colleccion_id obligatorio
+            if (!isset($obj_data['colleccion_id']) || $obj_data['colleccion_id'] <= 0) {
+                // Esta excepción es la que atrapamos más abajo para devolver 400
                 throw new \Exception("El colleccion_id {$obj_data['colleccion_id']} no existe");
             }
 
-            // Log de los datos antes de guardar
             Log::info('ViewRepository::guardar - Datos a insertar', $obj_data);
 
-            // Crear registro
-            $vista = $this->model->create([
-                'colleccion_id' => $obj_data['colleccion_id'],
-                'user_id' => $obj_data['user_id'] ?? null,
-                'ip_address' => $obj_data['ip_address'] ?? null,
-            ]);
+            $vista = $this->model->create($obj_data);
 
             Log::info('ViewRepository::guardar - Registro guardado correctamente', [
                 'id' => $vista->id,
@@ -55,11 +44,9 @@ class ViewRepository implements ViewInterface
 
             return $vista;
 
-        } catch (QueryException $ex) {
+        } catch (\Illuminate\Database\QueryException $ex) {
             Log::error('ViewRepository::guardar - Error de base de datos', [
                 'message' => $ex->getMessage(),
-                'line' => $ex->getLine(),
-                'file' => $ex->getFile(),
                 'datos' => $obj_data,
             ]);
 
@@ -73,10 +60,28 @@ class ViewRepository implements ViewInterface
             );
 
         } catch (\Exception $ex) {
+            // 🚀 MODIFICACIÓN CRUCIAL: Manejo de errores para datos de entrada inválidos (ID 0)
+            $errorMessage = $ex->getMessage();
+
+            if (str_contains($errorMessage, 'colleccion_id') && str_contains($errorMessage, 'no existe')) {
+                Log::warning('ViewRepository::guardar - ID de colección inválido', [
+                    'message' => $errorMessage,
+                    'datos' => $obj_data,
+                ]);
+                
+                throw new ExceptionServer(
+                    basename(__FILE__, ".php"),
+                    ["ID de colección inválido o faltante"],
+                    400, // 👈 Devuelve 400 Bad Request: Error del cliente con los datos
+                    "Petición Inválida",
+                    "LOG",
+                    $errorMessage
+                );
+            }
+            
+            // Si es cualquier otra excepción desconocida, mantiene el 500 (fallo interno real)
             Log::error('ViewRepository::guardar - Error general', [
-                'message' => $ex->getMessage(),
-                'line' => $ex->getLine(),
-                'file' => $ex->getFile(),
+                'message' => $errorMessage,
                 'datos' => $obj_data,
             ]);
 
@@ -86,10 +91,11 @@ class ViewRepository implements ViewInterface
                 500,
                 "Fallo de servicio",
                 "LOG",
-                $ex->getMessage()
+                $errorMessage
             );
         }
     }
+
 
     /**
      * Base select
@@ -129,12 +135,15 @@ class ViewRepository implements ViewInterface
     /**
      * Listar estadísticas de vistas
      */
-    public function listarTodo($find = '', $estado = '', $page = 1, $numero_items = 10)
+    public function listarTodo($find = '', $estado = '', $page = 1, $numero_items = 10, $tipocolleccion_id = null)
     {
         try {
             $query = $this->model
-                ->selectRaw('colleccion_id, COUNT(*) as total_vistas, MAX(created_at) as ultimo_registro')
-                ->with(['coleccion' => function($q) use ($find, $estado) {
+                ->with(['colleccion' => function($q) use ($find, $estado, $tipocolleccion_id) {
+                    if ($tipocolleccion_id) {
+                        // Asumo que esta lógica de filtrado es correcta:
+                        $q->where('tipocolleccion_id', $tipocolleccion_id);
+                    }
                     if ($find !== '') {
                         $q->where('nombre', 'like', "%$find%");
                     }
@@ -142,16 +151,15 @@ class ViewRepository implements ViewInterface
                         $q->where('estado', $estado);
                     }
                 }])
-                ->groupBy('colleccion_id')
+                ->selectRaw('tipocolleccion_id, COUNT(*) as total_vistas, MAX(created_at) as ultimo_registro')
+                ->groupBy('tipocolleccion_id')
                 ->orderByDesc('total_vistas');
 
             return $query->paginate($numero_items, ['*'], 'page', $page);
 
         } catch (\Exception $ex) {
-            Log::error('ViewRepository::listarTodo - Error', [
+            Log::error('Error en ViewRepository::listarTodo', [
                 'message' => $ex->getMessage(),
-                'line' => $ex->getLine(),
-                'file' => $ex->getFile(),
             ]);
 
             throw new ExceptionServer(

@@ -20,7 +20,7 @@ class ViewController extends Controller
     }
 
     /**
-     * ✅ Registrar una nueva vista de colección
+     * Registrar una nueva vista
      */
     public function guardar(Request $request, $colleccionId)
     {
@@ -30,6 +30,7 @@ class ViewController extends Controller
 
         try {
             $output = $this->viewService->guardar((object)[
+                'tipo_colleccion_id' => $colleccionId,
                 'colleccion_id' => $colleccionId,
                 'user_id' => $userId,
                 'ip_address' => $ipAddress
@@ -51,18 +52,13 @@ class ViewController extends Controller
     }
 
     /**
-     * ✅ Obtener todas las vistas de una colección específica
+     * Obtener vistas por colección
      */
     public function obtenerRecurso(Request $request, $colleccionId)
     {
         $validator = Validator::make(
             ['colleccion_id' => $colleccionId],
-            ['colleccion_id' => 'required|integer|min:1'],
-            [
-                'colleccion_id.required' => 'El campo colleccionId es obligatorio',
-                'colleccion_id.integer' => 'El campo colleccionId debe ser entero',
-                'colleccion_id.min' => 'El campo colleccionId debe ser mínimo 1',
-            ]
+            ['colleccion_id' => 'required|integer|min:1']
         );
 
         if ($validator->fails()) {
@@ -99,15 +95,21 @@ class ViewController extends Controller
     }
 
     /**
-     * ✅ Listar todas las vistas (paginadas)
+     * Listar todas las vistas (paginadas) compatible con Vue
+     */
+    // ... (código anterior del controlador)
+
+    /**
+     * Listar todas las vistas (paginadas) compatible con Vue
      */
     public function listarTodo(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'page' => 'integer|min:1',
             'numero_items' => 'integer|min:1',
-            'find' => 'nullable|string',
-            'estado' => 'nullable|string'
+            // 🚀 Usamos 'tipo_colleccion_id' para el filtro, ya que el frontend lo envía
+            'tipo_colleccion_id' => 'nullable|integer|min:1',
+            'find' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -119,11 +121,21 @@ class ViewController extends Controller
 
         $page = $request->input('page', 1);
         $numero_items = $request->input('numero_items', 10);
-        $find = $request->input('find', '');
-        $estado = $request->input('estado', '');
+        $find = $request->input('find', ''); // Se puede usar para buscar por nombre
+        
+        // 🚀 Capturamos el nuevo filtro que envía Vue
+        $tipo_colleccion_id = $request->input('tipo_colleccion_id');
 
         try {
-            $result = $this->viewService->listarTodo($find, $estado, $page, $numero_items);
+            // 💡 LLAMAMOS AL MÉTODO DEL SERVICIO QUE YA TIENE LA LÓGICA DE AGRUPACIÓN.
+            // Asumiendo que tu ViewService llama a ViewRepository::listarTodo
+            $result = $this->viewService->listarTodo(
+                $find, // Filtro por nombre (si lo implementas en el servicio)
+                '',     // Estado (no usado aquí)
+                $page,
+                $numero_items,
+                $tipo_colleccion_id // El ID de tipo de colección para filtrar
+            );
 
             return response()->json([
                 'state' => 202,
@@ -132,6 +144,8 @@ class ViewController extends Controller
             ], 202);
 
         } catch (\Exception $ex) {
+            // Si tu ViewRepository ya lanza el 400 por ID inválido, este catch lo ignora.
+            // Si el error es un 500, lo devuelve.
             return response()->json([
                 'state' => 500,
                 'msg' => ['Error al obtener las estadísticas'],
@@ -139,9 +153,9 @@ class ViewController extends Controller
             ], 500);
         }
     }
-
+// ... (código restante del controlador)
     /**
-     * ✅ Eliminar una o varias vistas
+     * Eliminar vistas
      */
     public function eliminar(Request $request, $id = null)
     {
@@ -166,48 +180,6 @@ class ViewController extends Controller
             return response()->json([
                 "state" => 500,
                 "msg" => ["Error al eliminar el recurso"],
-                "error" => $ex->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * ✅ Cambiar el estado de una vista
-     */
-    public function cambiarEstado(Request $request, $id)
-    {
-        $validator = Validator::make(
-            ["id" => $id, "estado" => $request->input("estado")],
-            ["id" => "required|integer|min:1", "estado" => "required|in:0,1"],
-            [
-                "id.required" => "El campo id es obligatorio",
-                "id.integer" => "El campo id debe ser entero",
-                "id.min" => "El campo id debe ser mínimo 1",
-                "estado.required" => "El campo estado es obligatorio",
-                "estado.in" => "El estado debe ser 0 o 1"
-            ]
-        );
-
-        if ($validator->fails()) {
-            return response()->json([
-                "state" => 422,
-                "msg" => $validator->errors()->all()
-            ], 422);
-        }
-
-        try {
-            $obj = $this->viewService->cambiarEstado($id, $request->input("estado"));
-
-            return response()->json([
-                "state" => 202,
-                "msg" => ["Estado actualizado correctamente"],
-                "obj" => $obj
-            ], 202);
-
-        } catch (\Exception $ex) {
-            return response()->json([
-                "state" => 500,
-                "msg" => ["Error al cambiar el estado"],
                 "error" => $ex->getMessage()
             ], 500);
         }

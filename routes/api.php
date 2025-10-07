@@ -93,15 +93,19 @@ Route::get('/factor', [FactorController::class, 'listarTodo']);
 
 // Route::get('vistas', [ViewController::class, 'listarTodo']); // <-- GET /api/vistas
 // Vistas por colección
-Route::get('vistas/{colleccionId}', [ViewController::class, 'obtenerRecurso']); // obtener todas las vistas de una colección
-Route::post('vistas/{colleccionId}', [ViewController::class, 'guardar']); // registrar nueva vista
+// Listado de Vistas (Detalle o Paginado - Manteniendo tu lógica POST/GET)
 
-// Listado paginado de todas las vistas
-Route::get('vistas', [ViewController::class, 'listarTodo']);  // listar todas las vistas (GET con query params)
-Route::post('vistas/listar', [ViewController::class, 'listarTodo']); // listar todas las vistas (POST con body)
 
-// Eliminar vistas
-Route::delete('vistas/{id?}', [ViewController::class, 'eliminar']); // eliminar una o varias vistas
+// Asegúrate de que esta línea exista y esté correcta:
+Route::post('vistas/listar', [ViewController::class, 'listarTodo']);
 
-// Cambiar estado de una vista
-Route::patch('vistas/{id}/estado', [ViewController::class, 'cambiarEstado']); // cambiar estado (activar/desactivar)
+// Registro de Vista (ID en el cuerpo de la petición - Recomendado)
+// Requiere modificar ViewController::guardar para obtener el ID de $request->input('colleccion_id')
+Route::post('vistas', [ViewController::class, 'guardar']); 
+
+// Operaciones por ID de VISTA (no ID de colección)
+Route::delete('vistas/{id}', [ViewController::class, 'eliminar']); 
+Route::patch('vistas/{id}/estado', [ViewController::class, 'cambiarEstado']);
+// Usa Route::match si esperas que la misma lógica de estadísticas pueda
+// ser accedida por GET (ej. un usuario pega el enlace en el navegador) o POST (ej. Vue con body)
+Route::match(['get', 'post'], 'vistas/listar', [ViewController::class, 'listarTodo']);

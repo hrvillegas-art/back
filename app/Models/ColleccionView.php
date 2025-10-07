@@ -14,14 +14,16 @@ class ColleccionView extends Model
 
     protected $fillable = [
     'colleccion_id',
-    'tipo_colleccion_id',
+    'tipocolleccion_id',
     'user_id',
     'ip_address',
 ];
 
-public function coleccion()
-{
-    return $this->belongsTo(Colleccion::class, 'tipo_colleccion_id');
-}
+ public function coleccion()
+    {
+        // 💡 VERIFICA ESTA RELACIÓN:
+        // Debe apuntar al modelo que contiene el nombre de la colección que se muestra en Vue
+        return $this->belongsTo(Tipocolleccion::class, 'tipocolleccion_id', 'id');
+    }
 
 }
